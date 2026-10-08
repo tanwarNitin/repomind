@@ -39,3 +39,6 @@ Thumbs.db
 .pytest_cache/
 repomind.db
 backend/data/
+
+*.db*
+
