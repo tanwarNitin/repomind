@@ -39,7 +39,7 @@ You can run RepoMind without Docker or complex configuration.
    .venv\Scripts\activate
    # On Linux/macOS:
    # source .venv/bin/activate
-   pip install -r requirements.txt
+   pip install -e ".[dev]"
    ```
 3. Run the backend and frontend:
    ```bash
@@ -58,18 +58,27 @@ You can run RepoMind without Docker or complex configuration.
 - **Targeted Test Selection:** Infers which tests to run based on the symbols modified in a unified diff.
 - **Zero-Cost LLM Gateway:** Integrated LiteLLM allows using free-tier models (Groq/Gemini).
 - **Security Scanning:** Scans for dangerous patterns (e.g. `eval`, `exec`, shell injections) before applying code changes.
-- **Digest Generation:** Analyzes a repository to produce a summary markdown report of architecture and endpoints.
+- **Digest Generation:** Generates a ranked morning triage report over open issues (severity × confidence, duplicate flags).
+- **Architecture Overview:** Generates an architecture overview for onboarding a newcomer.
 - **Local Model Context Protocol (MCP) Server:** Exposes investigation capabilities to AI IDEs like Cursor and Claude Desktop.
 
 ## API Overview
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/api/agent/run` | POST | Submits an issue to the triage agent for investigation. |
-| `/api/repo/ingest` | POST | Parses the repository and builds the search index. |
-| `/api/search` | GET | Queries the codebase using BM25 and AST symbols. |
-| `/api/digest` | POST | Generates an architectural digest report. |
-| `/api/runs` | GET | Lists past agent investigation runs from SQLite. |
+| `/api/health` | GET | Health check to verify API status. |
+| `/api/ingest` | POST | Ingests a repository via `ingest_repo`. |
+| `/api/repos` | GET | Returns a list of available ingested repositories. |
+| `/api/triage` | POST | Kicks off a background LangGraph agent triage task for an issue. |
+| `/api/stream/{thread_id}` | GET | Streams agent execution logs via Server-Sent Events (SSE). |
+| `/api/approve` | POST | Resumes graph execution based on human approval/rejection of a patch. |
+| `/api/followup` | POST | Adds a human message to the thread history and resumes the graph. |
+| `/api/state/{thread_id}` | GET | Retrieves the current state, patches, and logs of a thread. |
+| `/api/pr` | POST | Creates a draft pull request using the verified patch. |
+| `/api/digest` | POST | Generates a digest report of ranked open issues. |
+| `/api/digest/{digest_id}` | GET | Retrieves a previously generated digest report. |
+| `/api/explain` | POST | Generate an architecture overview for onboarding a newcomer. |
+| `/api/history` | GET | Retrieves all past triage runs from the SQLite database. |
 
 ## MCP Server Usage
 
@@ -81,7 +90,7 @@ RepoMind includes an MCP server that you can integrate with tools like Claude De
   "mcpServers": {
     "repomind": {
       "command": "python",
-      "args": ["-m", "app.mcp_server"],
+      "args": ["-m", "app.mcp_server", "--repo", "<YOUR_REPO_ID>"],
       "env": {
          "PYTHONPATH": "path/to/repomind/backend"
       }
