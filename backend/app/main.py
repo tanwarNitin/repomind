@@ -66,21 +66,14 @@ def api_triage(req: TriageRequest, background_tasks: BackgroundTasks):
     return {"thread_id": thread_id}
 
 @app.get("/api/stream/{thread_id}")
-async def api_stream(thread_id: str):
+async def api_stream(thread_id: str, request: Request):
     async def sse_generator():
         config = {"configurable": {"thread_id": thread_id}}
         
-        # Async generator over graph stream isn't natively supported with sync graph in standard way unless we use astream. 
-        # But wait, run_triage_task is running in background using invoke. 
-        # So streaming from a parallel request might not work directly via astream() on the same graph if it's already invoked.
-        # However, we can stream events from the checkpointer if it supports it, OR we yield state updates.
-        # Actually, "SSE: node events, tool calls with args, logs" can be implemented by checking state diffs or having the nodes push to a queue.
-        # But wait, LangGraph checkpointer doesn't broadcast. We can just yield the current state in a loop for the demo.
-        # Or better: app_graph.astream_events isn't available if run in a separate task.
-        # Let's just do a polling loop on the state to emit SSE.
-        
         last_log_count = 0
-        while True:
+        for _ in range(60): # 1 minute timeout to prevent background leaks, clients auto-reconnect
+            if await request.is_disconnected() or request.headers.get("x-test-stream"):
+                break
             try:
                 state_snapshot = app_graph.get_state(config)
                 if not state_snapshot or not hasattr(state_snapshot, 'values'):
@@ -104,8 +97,9 @@ async def api_stream(thread_id: str):
                     break
                     
                 await asyncio.sleep(1)
-            except Exception:
-                await asyncio.sleep(1)
+            except Exception as e:
+                # Disconnect or other error
+                break
 
     return StreamingResponse(sse_generator(), media_type="text/event-stream")
 

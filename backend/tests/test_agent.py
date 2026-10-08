@@ -24,16 +24,18 @@ def test_agent_triage_loop(fixture_repo_id):
     # 1. issue_parser: no tools, returns JSON string
     MOCK_RESPONSES.append(AIMessage(content='{"files": ["utils.py"], "symbols": ["parse_date"]}'))
     
-    # 2. researcher: let's give it 8 tool calls, so it loops 8 times, and on the 9th time it stops and outputs plan + evidence
-    # Actually, let's just do 8 tool calls to verify it halts at cap.
-    for i in range(8):
+    # 2. researcher: let's give it 10 tool calls, so it loops 8 times, and on the 9th time it stops
+    for i in range(10):
+        content = ""
+        if i >= 8:
+            # On the 9th and 10th time, we still provide tool calls to simulate a stubborn LLM,
+            # but we also provide valid JSON content so that when tools are stripped, it parses correctly.
+            content = '{"plan": "fix stuff", "evidence": [{"file": "utils.py", "start_line": 1, "end_line": 10, "why": "because"}]}'
+            
         MOCK_RESPONSES.append(AIMessage(
-            content="",
+            content=content,
             tool_calls=[{"name": "read_file", "args": {"path": "utils.py", "start": 1, "end": 10}, "id": f"call_{i}"}]
         ))
-        
-    # The 9th response for researcher when tools=None (because cap reached)
-    MOCK_RESPONSES.append(AIMessage(content='{"plan": "fix stuff", "evidence": [{"file": "utils.py", "start_line": 1, "end_line": 10, "why": "because"}]}'))
     
     # 3. patch_generator: generates diff citing evidence
     MOCK_RESPONSES.append(AIMessage(content='```diff\n--- a/utils.py\n+++ b/utils.py\n@@ -1,3 +1,3 @@\n-def old_func():\n+def parse_date():\n```'))
@@ -62,6 +64,9 @@ def test_agent_triage_loop(fixture_repo_id):
     assert "researcher iteration 1" in logs
     assert "researcher iteration 8" in logs
     assert "patch_generator finished" in logs
+    
+    # Assert the run completes with exactly 8 tool_iterations
+    assert final_state["tool_iterations"] == 8
 
 def test_patch_generator_rejected_no_evidence(fixture_repo_id):
     # If researcher generates NO evidence, patch_generator rejects back to researcher once.

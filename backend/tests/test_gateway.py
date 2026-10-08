@@ -9,5 +9,5 @@ def test_gateway_mock_mode(monkeypatch):
     assert is_mock_mode() is True
     
     response, tokens = call_llm([{"role": "user", "content": "Hello"}])
-    assert response == "MOCK_RESPONSE"
+    assert response.content == "MOCK_RESPONSE"
     assert tokens == 42

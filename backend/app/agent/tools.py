@@ -28,7 +28,10 @@ def sanitize_path(base_path: str, relative_path: str) -> str:
 def read_file(path: str, start: int, end: int, config: RunnableConfig) -> str:
     """Read a specific range of lines from a file."""
     repo_path = get_repo_path(config)
-    file_path = sanitize_path(repo_path, path)
+    try:
+        file_path = sanitize_path(repo_path, path)
+    except ValueError as e:
+        return f"Error: {str(e)}"
     
     if not os.path.exists(file_path):
         return f"Error: File {path} not found."
@@ -44,14 +47,23 @@ def read_file(path: str, start: int, end: int, config: RunnableConfig) -> str:
     return sanitized
 
 @tool
-def grep(pattern: str, config: RunnableConfig) -> List[str]:
-    """Search for a regex pattern across the repository."""
+def grep(pattern: str, path: str, config: RunnableConfig) -> List[str]:
+    """Search for a regex pattern across the repository or a specific path."""
     repo_path = get_repo_path(config)
+    try:
+        search_path = sanitize_path(repo_path, path)
+    except ValueError as e:
+        return [f"Error: {str(e)}"]
     
     results = []
     regex = re.compile(pattern)
         
-    for root, dirs, files in os.walk(repo_path):
+    if os.path.isfile(search_path):
+        to_walk = [(os.path.dirname(search_path), [], [os.path.basename(search_path)])]
+    else:
+        to_walk = os.walk(search_path)
+        
+    for root, dirs, files in to_walk:
         dirs[:] = [d for d in dirs if not d.startswith('.')]
         for file in files:
             if file.startswith('.'):
@@ -95,7 +107,10 @@ def symbol_lookup(name: str, config: RunnableConfig) -> List[Dict[str, Any]]:
 def git_log_recent(path: str, n: int, config: RunnableConfig) -> str:
     """Get the recent n git commit logs for a specific path."""
     repo_path = get_repo_path(config)
-    file_path = sanitize_path(repo_path, path)
+    try:
+        file_path = sanitize_path(repo_path, path)
+    except ValueError as e:
+        return f"Error: {str(e)}"
     
     if not os.path.exists(os.path.join(repo_path, ".git")):
         return "Error: Not a git repository."

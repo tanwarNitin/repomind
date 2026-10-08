@@ -17,9 +17,10 @@ def test_read_file(fixture_repo_id):
     assert isinstance(res, str)
     assert "Error: File" in res
     
-    # Path traversal rejected with exception (since we throw ValueError inside sanitize_path)
-    with pytest.raises(ValueError, match="Path traversal"):
-        read_file.invoke({"path": "../../etc/passwd", "start": 1, "end": 10}, config=config)
+    # Path traversal rejected with clean error string (not exception)
+    res = read_file.invoke({"path": "../../etc/passwd", "start": 1, "end": 10}, config=config)
+    assert isinstance(res, str)
+    assert "Path traversal" in res
         
     # Read file line ranges
     res = read_file.invoke({"path": "utils.py", "start": 1, "end": 2}, config=config)
@@ -31,13 +32,19 @@ def test_grep(fixture_repo_id):
     config = {"configurable": {"repo_id": fixture_repo_id}}
     
     # Grep no matches
-    res = grep.invoke({"pattern": "NON_EXISTENT_PATTERN_XYZ_123"}, config=config)
+    res = grep.invoke({"pattern": "NON_EXISTENT_PATTERN_XYZ_123", "path": ""}, config=config)
     assert isinstance(res, list)
     assert len(res) == 0
     
     # Grep matches
-    res = grep.invoke({"pattern": "def "}, config=config)
+    res = grep.invoke({"pattern": "def ", "path": ""}, config=config)
     assert len(res) > 0
+    
+    # Grep path traversal rejected with clean error
+    res = grep.invoke({"pattern": "def ", "path": "../../etc/passwd"}, config=config)
+    assert isinstance(res, list)
+    assert len(res) == 1
+    assert "Path traversal" in res[0]
 
 def test_symbol_lookup(fixture_repo_id):
     config = {"configurable": {"repo_id": fixture_repo_id}}
