@@ -13,13 +13,13 @@ def apply_patch(repo_copy_path: str, unified_diff: str) -> dict:
             f.write(unified_diff)
             
         # check patch first
-        check_cmd = ["git", "apply", "--check", "--unidiff-zero", patch_file]
+        check_cmd = ["git", "apply", "--check", "--ignore-whitespace", "--unidiff-zero", patch_file]
         res = subprocess.run(check_cmd, cwd=repo_copy_path, capture_output=True, text=True)
         if res.returncode != 0:
             return {"ok": False, "error": res.stderr}
             
         # apply
-        apply_cmd = ["git", "apply", "--unidiff-zero", patch_file]
+        apply_cmd = ["git", "apply", "--ignore-whitespace", "--unidiff-zero", patch_file]
         res = subprocess.run(apply_cmd, cwd=repo_copy_path, capture_output=True, text=True)
         if res.returncode != 0:
             return {"ok": False, "error": res.stderr}
