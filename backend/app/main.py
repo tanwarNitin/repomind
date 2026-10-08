@@ -252,3 +252,31 @@ def api_state(thread_id: str):
         "execution_logs": vals.get("execution_logs", []),
         "evidence": vals.get("evidence", [])
     }
+
+class ExplainRequest(BaseModel):
+    repo_id: str
+
+@app.post("/api/explain")
+def api_explain(req: ExplainRequest):
+    """
+    Generate an architecture overview for onboarding a newcomer.
+    
+    To connect the MCP server to Claude Desktop / Cursor, add this snippet to your Claude Desktop config (or equivalent):
+    ```json
+    {
+      "mcpServers": {
+        "repomind": {
+          "command": "python",
+          "args": ["-m", "app.mcp_server", "--repo", "<YOUR_REPO_ID>"],
+          "env": {}
+        }
+      }
+    }
+    ```
+    """
+    from app.onboarding.explainer import generate_explanation
+    try:
+        explanation = generate_explanation(req.repo_id)
+        return {"explanation": explanation}
+    except Exception as e:
+        return {"error": str(e)}
