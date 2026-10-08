@@ -1,0 +1,4 @@
+[tool.pytest.ini_options]
+testpaths = ["backend/tests"]
+norecursedirs = ["backend/data"]
+asyncio_mode = "auto"
