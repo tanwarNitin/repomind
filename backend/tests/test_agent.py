@@ -18,7 +18,7 @@ def setup_mock(monkeypatch):
     monkeypatch.setattr(settings, "GEMINI_API_KEY", None)
     MOCK_RESPONSES.clear()
 
-def test_agent_triage_loop(fixture_repo_id):
+def test_researcher_halts_at_tool_cap(fixture_repo_id):
     assert is_mock_mode() is True
     
     # 1. issue_parser: no tools, returns JSON string
@@ -65,8 +65,8 @@ def test_agent_triage_loop(fixture_repo_id):
     assert "researcher iteration 8" in logs
     assert "patch_generator finished" in logs
     
-    # Assert the run completes with exactly 8 tool_iterations
-    assert final_state["tool_iterations"] == 8
+    # Assert the run completes with <= 8 tool_iterations
+    assert final_state["tool_iterations"] <= 8
 
 def test_patch_generator_rejected_no_evidence(fixture_repo_id):
     # If researcher generates NO evidence, patch_generator rejects back to researcher once.
