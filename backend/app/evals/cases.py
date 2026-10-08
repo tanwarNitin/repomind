@@ -50,7 +50,7 @@ RETRIEVAL_CASES = [
 PATCH_CASES = [
   {
     "repo_path": REPO_ROOT_DIR,
-    "diff": "diff --git a/backend/app/core/config.py b/backend/app/core/config.py\n--- a/backend/app/core/config.py\n+++ b/backend/app/core/config.py\n@@ -1,4 +1,5 @@\n from pydantic_settings import BaseSettings\n+# AI comment\n \n class Settings(BaseSettings):\n     GROQ_API_KEY: str | None = None\n",
+    "diff": "diff --git a/backend/app/core/config.py b/backend/app/core/config.py\n--- a/backend/app/core/config.py\n+++ b/backend/app/core/config.py\n@@ -1,4 +1,5 @@\n from pydantic_settings import BaseSettings\n+# AI comment\n from pydantic import ConfigDict\n \n class Settings(BaseSettings):\n",
     "expected_test_substr": ""
   },
   {
@@ -60,7 +60,7 @@ PATCH_CASES = [
   },
   {
     "repo_path": REPO_ROOT_DIR,
-    "diff": "diff --git a/backend/app/core/db.py b/backend/app/core/db.py\n--- a/backend/app/core/db.py\n+++ b/backend/app/core/db.py\n@@ -1,4 +1,5 @@\n from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime\n+# AI comment\n from sqlalchemy.orm import declarative_base, sessionmaker\n import datetime\n \n",
+    "diff": "diff --git a/backend/app/core/db.py b/backend/app/core/db.py\n--- a/backend/app/core/db.py\n+++ b/backend/app/core/db.py\n@@ -1,4 +1,5 @@\n from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime\n+# AI comment\n from sqlalchemy.orm import declarative_base, sessionmaker\n import datetime\n from datetime import timezone\n",
     "expected_test_substr": "test_db"
   },
   {
