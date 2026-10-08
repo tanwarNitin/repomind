@@ -44,7 +44,12 @@ export default function TerminalLog({ logs }) {
           </div>
         );
       })}
-      {logs.length === 0 && <div className="text-textMuted italic">Waiting for execution to start...</div>}
+      {(!Array.isArray(logs) || logs.length === 0) && (
+        <div className="flex flex-col items-center justify-center h-full text-textMuted opacity-50 space-y-2 mt-10">
+          <span className="text-2xl font-bold">_</span>
+          <span className="text-xs tracking-wider">AWAITING EXECUTION</span>
+        </div>
+      )}
       <div ref={bottomRef} />
     </div>
   );

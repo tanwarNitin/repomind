@@ -16,7 +16,7 @@ export default {
         border: '#2C2C30',
         textMain: '#E4E4E5',
         textMuted: '#8B8D91',
-        accentVer: '#238636', // green verified
+        accentVer: '#1a5c27', // muted green verified
         accentRev: '#D29922', // amber needs review
         accentFail: '#F85149', // red failed
       }
