@@ -131,6 +131,8 @@ async def api_stream(thread_id: str, request: Request):
         
         last_log_count = 0
         for _ in range(60): # 1 minute timeout to prevent background leaks, clients auto-reconnect
+            # FastAPI's TestClient blocks indefinitely on SSE unless interrupted.
+            # We keep `x-test-stream` as a clean way to exit the generator during tests without hanging.
             if await request.is_disconnected() or request.headers.get("x-test-stream"):
                 break
             try:
