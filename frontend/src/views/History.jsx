@@ -4,14 +4,16 @@ import { getHistory } from '../api';
 export default function History() {
   const [runs, setRuns] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     const fetchHistory = async () => {
       try {
         const res = await getHistory();
-        setRuns(res.data);
+        setRuns(Array.isArray(res.data) ? res.data : []);
       } catch (e) {
         console.error(e);
+        setError('Failed to load history.');
       } finally {
         setLoading(false);
       }
@@ -24,9 +26,11 @@ export default function History() {
       <div className="max-w-6xl mx-auto">
         <h1 className="text-xl font-bold tracking-wider mb-8 border-b border-border pb-4">RUN HISTORY</h1>
         
+        {error && <div className="text-accentFail mb-4">{error}</div>}
+
         {loading ? (
           <div className="text-textMuted italic">Loading...</div>
-        ) : runs.length === 0 ? (
+        ) : (!Array.isArray(runs) || runs.length === 0) ? (
           <div className="text-textMuted italic">No previous runs.</div>
         ) : (
           <table className="w-full text-left border-collapse">

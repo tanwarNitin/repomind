@@ -42,7 +42,7 @@ function TopBar({ repos, currentRepo, setCurrentRepo, refreshRepos }) {
             className="bg-bg border border-border text-textMain px-2 py-1 rounded focus:outline-none focus:border-textMuted"
           >
             <option value="">Select a repository...</option>
-            {repos.map(r => (
+            {Array.isArray(repos) && repos.map(r => (
               <option key={r.repo_id} value={r.repo_id}>{r.repo_id}</option>
             ))}
           </select>
@@ -91,9 +91,10 @@ export default function App() {
   const refreshRepos = async () => {
     try {
       const res = await getRepos();
-      setRepos(res.data);
-      if (res.data.length > 0 && !currentRepo) {
-        setCurrentRepo(res.data[0].repo_id);
+      const reposArray = Array.isArray(res.data) ? res.data : [];
+      setRepos(reposArray);
+      if (reposArray.length > 0 && !currentRepo) {
+        setCurrentRepo(reposArray[0].repo_id);
       }
     } catch (e) {
       console.error(e);

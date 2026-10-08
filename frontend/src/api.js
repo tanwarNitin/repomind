@@ -4,7 +4,12 @@ const api = axios.create({ baseURL: '/api' });
 
 export const getHealth = () => api.get('/health');
 export const ingestRepo = (source) => api.post('/ingest', { source });
-export const getRepos = () => api.get('/repos');
+export const getRepos = async () => {
+  const res = await api.get('/repos');
+  const data = res.data;
+  res.data = Array.isArray(data) ? data : Object.values(data || {});
+  return res;
+};
 export const submitTriage = (payload) => api.post('/triage', payload); // { repo_id, issue_text, issue_url }
 export const getState = (thread_id) => api.get(`/state/${thread_id}`);
 export const approvePatch = (payload) => api.post('/approve', payload); // { thread_id, action, edited_diff }

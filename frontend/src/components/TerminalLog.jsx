@@ -10,7 +10,7 @@ export default function TerminalLog({ logs }) {
 
   return (
     <div className="font-mono text-xs text-gray-300 space-y-1 pb-4">
-      {logs.map((log, idx) => {
+      {Array.isArray(logs) && logs.map((log, idx) => {
         const time = log.timestamp ? format(new Date(log.timestamp), 'HH:mm:ss.SSS') : '00:00:00.000';
         
         let content = null;

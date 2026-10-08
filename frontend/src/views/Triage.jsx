@@ -168,7 +168,7 @@ export default function Triage({ currentRepo }) {
       <div className="w-1/4 min-w-[250px] bg-panel p-4 flex flex-col">
         <h2 className="font-bold mb-4">EVIDENCE PANEL</h2>
         <div className="flex-1 overflow-y-auto">
-          {evidence.length === 0 ? (
+          {(!Array.isArray(evidence) || evidence.length === 0) ? (
             <div className="text-textMuted text-xs">No citations yet.</div>
           ) : (
             <ul className="space-y-2">

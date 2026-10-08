@@ -49,7 +49,7 @@ export default function Digest({ currentRepo }) {
 
         {digestData && (
           <div className="space-y-6">
-            {digestData.issues && digestData.issues.map((issue, i) => (
+            {Array.isArray(digestData.issues) && digestData.issues.map((issue, i) => (
               <div key={i} className="bg-panel border border-border p-4 shadow-sm">
                 <div className="flex justify-between items-start mb-2">
                   <h3 className="font-bold text-lg">
@@ -75,7 +75,7 @@ export default function Digest({ currentRepo }) {
                 </div>
               </div>
             ))}
-            {(!digestData.issues || digestData.issues.length === 0) && (
+            {(!Array.isArray(digestData.issues) || digestData.issues.length === 0) && (
               <div className="text-textMuted">No issues found in this digest.</div>
             )}
           </div>
