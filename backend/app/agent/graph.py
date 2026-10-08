@@ -10,10 +10,13 @@ from .nodes import issue_parser, researcher, execute_tools, patch_generator, hit
 def build_graph():
     builder = StateGraph(AgentState)
 
+    from .nodes import issue_parser, researcher, execute_tools, patch_generator, verifier, hitl_interrupt, should_continue_researcher, should_continue_patch, should_continue_verifier
+
     builder.add_node("issue_parser", issue_parser)
     builder.add_node("researcher", researcher)
     builder.add_node("execute_tools", execute_tools)
     builder.add_node("patch_generator", patch_generator)
+    builder.add_node("verifier", verifier)
     builder.add_node("hitl_interrupt", hitl_interrupt)
 
     builder.add_edge(START, "issue_parser")
@@ -28,6 +31,11 @@ def build_graph():
     
     builder.add_conditional_edges("patch_generator", should_continue_patch, {
         "researcher": "researcher",
+        "verifier": "verifier"
+    })
+
+    builder.add_conditional_edges("verifier", should_continue_verifier, {
+        "patch_generator": "patch_generator",
         "hitl_interrupt": "hitl_interrupt"
     })
     

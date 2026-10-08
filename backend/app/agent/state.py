@@ -25,3 +25,4 @@ class AgentState(TypedDict):
     total_tokens: int
     messages: Annotated[List[Any], operator.add]
     tool_iterations: int
+    verifier_retries: int

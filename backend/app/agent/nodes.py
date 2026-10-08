@@ -9,6 +9,14 @@ from app.core.gateway import call_llm
 from .state import AgentState, Evidence
 from .tools import TOOLS
 
+import tempfile
+import shutil
+import os
+from app.verify.security_scan import scan_diff
+from app.verify.patcher import apply_patch
+from app.verify.test_selector import select_tests
+from app.verify.test_runner import run_tests
+
 def format_messages_for_litellm(messages: List[BaseMessage]) -> List[Dict[str, Any]]:
     formatted = []
     for m in messages:
@@ -190,16 +198,77 @@ Evidence: {json.dumps(evidence)}
         "execution_logs": [f"patch_generator finished, tokens={tokens}"]
     }
 
+def verifier(state: AgentState, config: RunnableConfig):
+    patch_diff = state.get("patch_diff", "")
+    
+    sec_res = scan_diff(patch_diff)
+    if not sec_res["clean"]:
+        return {
+            "verification_result": "Security scan failed: " + ", ".join(sec_res["findings"]),
+            "execution_logs": ["Verifier: Security scan failed"]
+        }
+        
+    repo_id = state.get("repo_id")
+    from app.core.ingest import get_repos
+    repos = get_repos()
+    if repo_id not in repos:
+        return {
+            "verification_result": f"Repo {repo_id} not found for verification",
+            "execution_logs": ["Verifier: Repo not found"]
+        }
+        
+    original_repo_path = repos[repo_id]["path"]
+    
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp_repo = os.path.join(temp_dir, "repo")
+        shutil.copytree(original_repo_path, temp_repo)
+        
+        patch_res = apply_patch(temp_repo, patch_diff)
+        if not patch_res["ok"]:
+            return _handle_verification_failure(state, "Patch failed to apply: " + patch_res.get("error", ""))
+            
+        test_files = select_tests(temp_repo, patch_diff)
+        test_res = run_tests(temp_repo, test_files)
+        
+        if test_res["passed"]:
+            return {
+                "verification_result": "Passed",
+                "execution_logs": ["Verifier: Tests passed"]
+            }
+        else:
+            return _handle_verification_failure(state, "Tests failed:\n" + test_res.get("failures_summary", ""))
+
+def _handle_verification_failure(state: AgentState, error_msg: str):
+    retries = state.get("verifier_retries", 0)
+    if retries >= 1:
+        return {
+            "verification_result": "Failed after retries: " + error_msg,
+            "execution_logs": ["Verifier: Tests failed, exhausted retries"]
+        }
+        
+    new_msg = HumanMessage(content=f"Your patch failed verification. Please fix it.\nError:\n{error_msg}")
+    return {
+        "verifier_retries": retries + 1,
+        "messages": [new_msg],
+        "execution_logs": ["Verifier: Patch failed, sending back to patch_generator"]
+    }
+
 def should_continue_researcher(state: AgentState) -> Literal["execute_tools", "patch_generator"]:
     last_message = state["messages"][-1]
     if isinstance(last_message, AIMessage) and last_message.tool_calls:
         return "execute_tools"
     return "patch_generator"
 
-def should_continue_patch(state: AgentState) -> Literal["researcher", "hitl_interrupt"]:
+def should_continue_patch(state: AgentState) -> Literal["researcher", "verifier"]:
     last_log = state.get("execution_logs", [])[-1] if state.get("execution_logs") else ""
     if "rejected due to no evidence" in last_log:
         return "researcher"
+    return "verifier"
+
+def should_continue_verifier(state: AgentState) -> Literal["patch_generator", "hitl_interrupt"]:
+    last_log = state.get("execution_logs", [])[-1] if state.get("execution_logs") else ""
+    if "sending back to patch_generator" in last_log:
+        return "patch_generator"
     return "hitl_interrupt"
 
 def hitl_interrupt(state: AgentState):
