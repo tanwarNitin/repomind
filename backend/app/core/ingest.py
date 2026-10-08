@@ -3,6 +3,7 @@ import shutil
 import subprocess
 import uuid
 from pathlib import Path
+from fastapi import HTTPException
 from .search import build_index
 from .db import SessionLocal, Repo
 
@@ -12,16 +13,22 @@ REPOS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path
 os.makedirs(REPOS_DIR, exist_ok=True)
 
 def ingest_repo(source: str):
+    if not (source.startswith("http://") or source.startswith("https://") or os.path.exists(source)):
+        raise HTTPException(status_code=400, detail="Invalid source")
+
     repo_id = str(uuid.uuid4())
     repo_path = os.path.join(REPOS_DIR, repo_id)
     
     if source.startswith("http://") or source.startswith("https://"):
         # clone depth 1
-        subprocess.run(["git", "clone", "--depth", "1", source, repo_path], check=True)
+        try:
+            subprocess.run(["git", "clone", "--depth", "1", source, repo_path], check=True, capture_output=True, text=True)
+        except subprocess.CalledProcessError as e:
+            lines = e.stderr.strip().split('\n') if e.stderr else []
+            last_line = lines[-1] if lines else "unknown error"
+            raise HTTPException(status_code=502, detail=f"clone_failed: {last_line}")
     else:
         # local path
-        if not os.path.exists(source):
-            raise ValueError(f"Local path does not exist: {source}")
         # copy to repo_path
         shutil.copytree(source, repo_path)
         
