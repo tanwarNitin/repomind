@@ -35,3 +35,6 @@ Thumbs.db
 *.diff
 *.patch
 
+# Python Testing and DB
+.pytest_cache/
+repomind.db
