@@ -28,9 +28,13 @@ def api_ingest(req: IngestRequest):
 def api_repos():
     return get_repos()
 
+from app.integrations.github import fetch_issue, create_draft_pr
+from app.digest.digest import generate_digest_report, get_digest
+
 class TriageRequest(BaseModel):
     repo_id: str
-    issue_text: str
+    issue_text: str | None = None
+    issue_url: str | None = None
 
 def run_triage_task(thread_id: str, repo_id: str, issue_text: str):
     db = SessionLocal()
@@ -61,9 +65,64 @@ def run_triage_task(thread_id: str, repo_id: str, issue_text: str):
 
 @app.post("/api/triage")
 def api_triage(req: TriageRequest, background_tasks: BackgroundTasks):
-    thread_id = str(uuid.uuid4().int % (2**31)) # using int for sqlite id
-    background_tasks.add_task(run_triage_task, thread_id, req.repo_id, req.issue_text)
+    thread_id = str(uuid.uuid4().int % (2**31))
+    
+    issue_text = req.issue_text
+    if req.issue_url:
+        issue_data = fetch_issue(req.issue_url)
+        if "error" in issue_data:
+            return {"error": issue_data["error"]}
+        issue_text = f"Title: {issue_data['title']}\n\nBody: {issue_data['body']}\n\nComments:\n" + "\n".join(issue_data['comments'])
+        
+    if not issue_text:
+        return {"error": "issue_text or issue_url required"}
+        
+    background_tasks.add_task(run_triage_task, thread_id, req.repo_id, issue_text)
     return {"thread_id": thread_id}
+
+class PRRequest(BaseModel):
+    thread_id: str
+    branch_name: str | None = "repomind-fix"
+    title: str | None = "Fix issue"
+    body: str | None = "Auto-generated PR from RepoMind"
+
+@app.post("/api/pr")
+def api_pr(req: PRRequest):
+    db = SessionLocal()
+    try:
+        run = db.query(TriageRun).filter(TriageRun.id == int(req.thread_id)).first()
+        if not run:
+            return {"error": "Run not found"}
+        if run.status not in ["APPROVED", "EDITED"]:
+            return {"error": "Patch not approved"}
+            
+        repo = db.query(Repo).filter(Repo.repo_id == run.repo_url).first()
+        if not repo:
+            return {"error": "Repo not found"}
+            
+        res = create_draft_pr(repo.source, req.branch_name, run.patch_diff, req.title, req.body)
+        return res
+    finally:
+        db.close()
+
+class DigestRequest(BaseModel):
+    repo_id: str
+    
+@app.post("/api/digest")
+def api_digest(req: DigestRequest, background_tasks: BackgroundTasks):
+    # Depending on requirements, we can run this inline or in background. The prompt says returns {digest_id} implied by GET /api/digest/{digest_id}
+    # Wait, the spec says "POST /api/digest {repo_id}: ... outputs ... Persists ... GET /api/digest/{digest_id} returns ..."
+    # I'll run it inline for simplicity or background? Let's do inline or return digest_id.
+    digest_id = generate_digest_report(req.repo_id)
+    return {"digest_id": digest_id}
+    
+@app.get("/api/digest/{digest_id}")
+def api_get_digest(digest_id: int):
+    d = get_digest(digest_id)
+    if not d:
+        return {"error": "not found"}
+    return d
+
 
 @app.get("/api/stream/{thread_id}")
 async def api_stream(thread_id: str, request: Request):

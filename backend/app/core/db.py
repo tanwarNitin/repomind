@@ -19,4 +19,22 @@ class TriageRun(Base):
     tokens_used = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
+class Repo(Base):
+    __tablename__ = "repos"
+    
+    repo_id = Column(String, primary_key=True, index=True)
+    source = Column(String)
+    path = Column(String)
+    files_indexed = Column(Integer, default=0)
+    symbols_indexed = Column(Integer, default=0)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+class Digest(Base):
+    __tablename__ = "digests"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    repo_id = Column(String, index=True)
+    markdown_report = Column(Text)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
 Base.metadata.create_all(bind=engine)
