@@ -1,0 +1,24 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-bg text-textMain font-sans antialiased overflow-hidden m-0 p-0 h-screen w-screen flex flex-col;
+  }
+  #root {
+    @apply flex flex-col flex-1 h-full overflow-hidden;
+  }
+}
+
+/* Custom scrollbar for webkit */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  @apply bg-bg;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-border hover:bg-textMuted rounded;
+}

@@ -280,3 +280,22 @@ def api_explain(req: ExplainRequest):
         return {"explanation": explanation}
     except Exception as e:
         return {"error": str(e)}
+
+@app.get("/api/history")
+def api_history():
+    db = SessionLocal()
+    try:
+        runs = db.query(TriageRun).order_by(TriageRun.id.desc()).all()
+        return [
+            {
+                "id": run.id,
+                "repo_url": run.repo_url,
+                "status": run.status,
+                "tokens_used": run.tokens_used,
+                "patch_verdict": "YES" if run.patch_diff else "NO"
+            }
+            for run in runs
+        ]
+    finally:
+        db.close()
+
