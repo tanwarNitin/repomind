@@ -17,3 +17,17 @@ async def fake_sse_generator():
 @app.get("/api/stream")
 async def stream():
     return StreamingResponse(fake_sse_generator(), media_type="text/event-stream")
+
+from pydantic import BaseModel
+from app.core.ingest import ingest_repo, get_repos
+
+class IngestRequest(BaseModel):
+    source: str
+
+@app.post("/api/ingest")
+def api_ingest(req: IngestRequest):
+    return ingest_repo(req.source)
+
+@app.get("/api/repos")
+def api_repos():
+    return get_repos()

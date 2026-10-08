@@ -38,3 +38,4 @@ Thumbs.db
 # Python Testing and DB
 .pytest_cache/
 repomind.db
+backend/data/

@@ -2,7 +2,7 @@ import litellm
 from .config import settings
 
 # Currently available free-tier models (Verified for Groq & Gemini as of 2024-2025)
-CHEAP_MODEL_GROQ = "groq/llama3-8b-8192"
+CHEAP_MODEL_GROQ = "groq/llama-3.1-8b-instant"
 REASONER_MODEL_GROQ = "groq/llama-3.1-70b-versatile"
 CHEAP_MODEL_GEMINI = "gemini/gemini-1.5-flash"
 REASONER_MODEL_GEMINI = "gemini/gemini-1.5-pro"
