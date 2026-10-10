@@ -6,7 +6,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from app.core.config import settings
-from app.core.ingest import ingest_repo, get_repos
+from app.core.ingest import ingest_repo, get_repos, reingest_repo
 from app.core.db import SessionLocal, TriageRun
 from app.agent.graph import app_graph
 from langchain_core.messages import HumanMessage
@@ -23,6 +23,13 @@ class IngestRequest(BaseModel):
 @app.post("/api/ingest")
 def api_ingest(req: IngestRequest):
     return ingest_repo(req.source)
+
+class ReingestRequest(BaseModel):
+    repo_id: str
+
+@app.post("/api/reingest")
+def api_reingest(req: ReingestRequest):
+    return reingest_repo(req.repo_id)
 
 @app.get("/api/repos")
 def api_repos():
