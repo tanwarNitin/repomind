@@ -7,11 +7,11 @@ class GatewayError(Exception):
     pass
 
 # Currently available free-tier models
+# Groq rate-limit docs Aug 2026; Gemini live-tested Oct 2026
 CHEAP_MODEL_GROQ = "groq/llama-3.1-8b-instant"
-REASONER_MODEL_GROQ = "groq/llama-3.1-70b-versatile"
-# 1.5 family retired by Google (404 as of Oct 2026); -latest aliases track the current recommended build.
+REASONER_MODEL_GROQ = "groq/llama-3.3-70b-versatile"
 CHEAP_MODEL_GEMINI = "gemini/gemini-flash-latest"
-REASONER_MODEL_GEMINI = "gemini/gemini-pro-latest"
+REASONER_MODEL_GEMINI = "gemini/gemini-flash-latest"
 
 # Global mock for tests
 MOCK_RESPONSES = []
