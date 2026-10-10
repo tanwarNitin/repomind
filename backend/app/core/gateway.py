@@ -7,9 +7,9 @@ class GatewayError(Exception):
     pass
 
 # Currently available free-tier models
-# Groq rate-limit docs Aug 2026; Gemini live-tested Oct 2026
-CHEAP_MODEL_GROQ = "groq/llama-3.1-8b-instant"
-REASONER_MODEL_GROQ = "groq/llama-3.3-70b-versatile"
+# Groq /models endpoint Oct 2026 — Llama line fully retired; gpt-oss-20b (cheap) / gpt-oss-120b (reasoner) live-verified
+CHEAP_MODEL_GROQ = "groq/openai/gpt-oss-20b"
+REASONER_MODEL_GROQ = "groq/openai/gpt-oss-120b"
 CHEAP_MODEL_GEMINI = "gemini/gemini-flash-latest"
 REASONER_MODEL_GEMINI = "gemini/gemini-flash-latest"
 

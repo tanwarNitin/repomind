@@ -13,10 +13,11 @@ def test_gateway_mock_mode(monkeypatch):
     assert tokens == 42
 
 def test_gateway_model_ids_not_retired():
-    from app.core.gateway import CHEAP_MODEL_GEMINI, REASONER_MODEL_GEMINI, REASONER_MODEL_GROQ
+    from app.core.gateway import CHEAP_MODEL_GEMINI, REASONER_MODEL_GEMINI, CHEAP_MODEL_GROQ, REASONER_MODEL_GROQ
     assert "1.5" not in CHEAP_MODEL_GEMINI
     assert "1.5" not in REASONER_MODEL_GEMINI
-    assert "3.1-70b-versatile" not in REASONER_MODEL_GROQ
+    assert "llama-" not in CHEAP_MODEL_GROQ
+    assert "llama-" not in REASONER_MODEL_GROQ
 
 def test_reasoner_model_has_free_tier():
     from app.core.gateway import REASONER_MODEL_GEMINI
