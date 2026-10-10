@@ -64,7 +64,7 @@ Respond in JSON only:
 """
             # Minimal LLM call
             res = completion(
-                model="gemini/gemini-1.5-flash",
+                model="gemini/gemini-flash-latest",
                 messages=[{"role": "user", "content": prompt}],
                 response_format={"type": "json_object"}
             )

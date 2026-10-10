@@ -11,6 +11,12 @@ def fixture_repo_id():
     res = ingest_repo(fixture_path)
     return res["repo_id"]
 
+@pytest.fixture(autouse=True)
+def setup_mock(monkeypatch):
+    from app.core.config import settings
+    monkeypatch.setattr(settings, "GROQ_API_KEY", None)
+    monkeypatch.setattr(settings, "GEMINI_API_KEY", None)
+
 def test_explain_has_all_sections(fixture_repo_id):
     MOCK_RESPONSES.clear()
     MOCK_RESPONSES.append(AIMessage(content="""

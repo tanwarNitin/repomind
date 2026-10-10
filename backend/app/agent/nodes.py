@@ -164,11 +164,13 @@ If you need more info, call tools."""
 def patch_generator(state: AgentState, config: RunnableConfig):
     # Only called when researcher is done. We can reject it if evidence is missing.
     evidence = state.get("evidence", [])
-    if not evidence and not state.get("patch_rejected"):
-        # reject once
+    if not evidence:
+        rejections = state.get("rejection_count", 0)
+        if rejections >= 3:
+            raise RuntimeError("Run failed: rejected due to no evidence 3 times.")
         return {
             "messages": [HumanMessage(content="Your previous step provided no evidence. Please research again and provide evidence.")],
-            "patch_rejected": True, # wait, we can just use a local state variable, or add to AgentState? Let's use a hidden mechanism or add to state.
+            "rejection_count": rejections + 1,
             "execution_logs": ["patch_generator rejected due to no evidence"]
         }
         

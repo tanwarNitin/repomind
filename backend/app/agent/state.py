@@ -26,3 +26,4 @@ class AgentState(TypedDict):
     messages: Annotated[List[Any], operator.add]
     tool_iterations: int
     verifier_retries: int
+    rejection_count: int

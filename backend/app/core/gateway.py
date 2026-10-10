@@ -3,11 +3,15 @@ import json
 from .config import settings
 from langchain_core.messages import AIMessage, ToolCall
 
+class GatewayError(Exception):
+    pass
+
 # Currently available free-tier models
 CHEAP_MODEL_GROQ = "groq/llama-3.1-8b-instant"
 REASONER_MODEL_GROQ = "groq/llama-3.1-70b-versatile"
-CHEAP_MODEL_GEMINI = "gemini/gemini-1.5-flash"
-REASONER_MODEL_GEMINI = "gemini/gemini-1.5-pro"
+# 1.5 family retired by Google (404 as of Oct 2026); -latest aliases track the current recommended build.
+CHEAP_MODEL_GEMINI = "gemini/gemini-flash-latest"
+REASONER_MODEL_GEMINI = "gemini/gemini-pro-latest"
 
 # Global mock for tests
 MOCK_RESPONSES = []
@@ -74,4 +78,4 @@ def call_llm(messages: list, use_reasoner: bool = False, tools: list = None) -> 
         
         return AIMessage(content=content, tool_calls=tool_calls), tokens
     except Exception as e:
-        return AIMessage(content=f"Error: {str(e)}"), 0
+        raise GatewayError(f"Error calling LLM: {str(e)}") from e

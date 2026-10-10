@@ -58,7 +58,7 @@ def generate_explanation(repo_id: str) -> str:
         return mock_msg.content
 
     api_key = os.environ.get("GEMINI_API_KEY")
-    model = "gemini/gemini-1.5-flash"
+    model = "gemini/gemini-flash-latest"
     
     try:
         res = completion(

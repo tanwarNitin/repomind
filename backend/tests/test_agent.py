@@ -18,6 +18,8 @@ def setup_mock(monkeypatch):
     monkeypatch.setattr(settings, "GEMINI_API_KEY", None)
     MOCK_RESPONSES.clear()
 
+import uuid
+
 def test_researcher_halts_at_tool_cap(fixture_repo_id):
     assert is_mock_mode() is True
     
@@ -40,7 +42,8 @@ def test_researcher_halts_at_tool_cap(fixture_repo_id):
     # 3. patch_generator: generates diff citing evidence
     MOCK_RESPONSES.append(AIMessage(content='```diff\n--- a/utils.py\n+++ b/utils.py\n@@ -1,3 +1,3 @@\n-def old_func():\n+def parse_date():\n```'))
     
-    config = {"configurable": {"thread_id": "test_thread_1", "repo_id": fixture_repo_id}}
+    thread_id = f"test_thread_1_{uuid.uuid4()}"
+    config = {"configurable": {"thread_id": thread_id, "repo_id": fixture_repo_id}}
     state = {
         "repo_id": fixture_repo_id,
         "raw_issue": "Fix date parsing in utils.py",
@@ -83,9 +86,14 @@ def test_patch_generator_rejected_no_evidence(fixture_repo_id):
     MOCK_RESPONSES.append(AIMessage(content='{"plan": "fix stuff 2", "evidence": [{"file": "api.ts", "start_line": 1, "end_line": 2, "why": "ok"}]}'))
     
     # 5. patch_generator yields patch
-    MOCK_RESPONSES.append(AIMessage(content='```diff\n--- a/api.ts\n+++ b/api.ts\n@@ -1,2 +1,2 @@\n-old\n+new\n```'))
+    diff_msg = AIMessage(content='```diff\n--- a/api.ts\n+++ b/api.ts\n@@ -1,2 +1,2 @@\n-old\n+new\n```')
+    MOCK_RESPONSES.append(diff_msg)
+    # The verifier will fail because this is a bad patch, so it retries. Supply more mocks for the retries.
+    MOCK_RESPONSES.append(diff_msg)
+    MOCK_RESPONSES.append(diff_msg)
     
-    config = {"configurable": {"thread_id": "test_thread_2", "repo_id": fixture_repo_id}}
+    thread_id = f"test_thread_2_{uuid.uuid4()}"
+    config = {"configurable": {"thread_id": thread_id, "repo_id": fixture_repo_id}}
     state = {
         "repo_id": fixture_repo_id,
         "raw_issue": "Fix api.ts",
@@ -99,7 +107,20 @@ def test_patch_generator_rejected_no_evidence(fixture_repo_id):
 def test_resume_paths(fixture_repo_id):
     MOCK_RESPONSES.clear()
     
-    config = {"configurable": {"thread_id": "test_thread_1"}} # same thread as test 1
+    thread_id = f"test_thread_3_{uuid.uuid4()}"
+    config = {"configurable": {"thread_id": thread_id}} 
+    
+    # To test resume, we need to first run something into HITL
+    MOCK_RESPONSES.append(AIMessage(content='{"files": [], "symbols": []}'))
+    MOCK_RESPONSES.append(AIMessage(content='{"plan": "plan", "evidence": [{"file": "x", "start_line": 1, "end_line": 1, "why": "why"}]}'))
+    MOCK_RESPONSES.append(AIMessage(content='```diff\n--- a/x\n+++ b/x\n@@ -1 +1 @@\n-a\n+b\n```'))
+    
+    state = {
+        "repo_id": fixture_repo_id,
+        "raw_issue": "Fix x",
+        "approval_status": "PENDING"
+    }
+    app_graph.invoke(state, config)
     
     # Resume with APPROVED
     app_graph.update_state(config, {"approval_status": "APPROVED"}, as_node="hitl_interrupt")
@@ -109,14 +130,26 @@ def test_resume_paths(fixture_repo_id):
 def test_followup_preserves_history(fixture_repo_id):
     MOCK_RESPONSES.clear()
     
+    thread_id = f"test_thread_4_{uuid.uuid4()}"
+    config = {"configurable": {"thread_id": thread_id, "repo_id": fixture_repo_id}}
+    
+    MOCK_RESPONSES.append(AIMessage(content='{"files": [], "symbols": []}'))
+    MOCK_RESPONSES.append(AIMessage(content='{"plan": "plan", "evidence": [{"file": "main.js", "start_line": 1, "end_line": 2, "why": "ok"}]}'))
+    MOCK_RESPONSES.append(AIMessage(content='```diff\n--- a/main.js\n+++ b/main.js\n@@ -1,2 +1,2 @@\n-a\n+b\n```'))
+    
+    app_graph.invoke({
+        "repo_id": fixture_repo_id,
+        "raw_issue": "Fix main",
+        "approval_status": "PENDING"
+    }, config)
+    
     # In followup, we resume from execute_tools
     # We must provide responses for researcher and patch_generator
     # 1. researcher tool call (or just plan + evidence)
     MOCK_RESPONSES.append(AIMessage(content='{"plan": "followup plan", "evidence": [{"file": "main.js", "start_line": 1, "end_line": 2, "why": "ok"}]}'))
     # 2. patch_generator diff
-    MOCK_RESPONSES.append(AIMessage(content='```diff\n--- a/main.js\n+++ b/main.js\n@@ -1,2 +1,2 @@\n-a\n+b\n```'))
+    MOCK_RESPONSES.append(AIMessage(content='```diff\n--- a/main.js\n+++ b/main.js\n@@ -1,2 +1,2 @@\n-a\n+c\n```'))
     
-    config = {"configurable": {"thread_id": "test_thread_1"}}
     new_msg = HumanMessage(content="Please also check main.js")
     
     app_graph.update_state(config, {"messages": [new_msg]}, as_node="execute_tools")
@@ -128,3 +161,25 @@ def test_followup_preserves_history(fixture_repo_id):
     # history intact
     msgs = final_state["messages"]
     assert len(msgs) > 3
+
+def test_no_evidence_rejection_caps_at_3(fixture_repo_id):
+    MOCK_RESPONSES.clear()
+    
+    # 1. issue_parser
+    MOCK_RESPONSES.append(AIMessage(content='{"files": [], "symbols": []}'))
+    
+    # 3 consecutive researcher outputs with no evidence
+    MOCK_RESPONSES.append(AIMessage(content='{"plan": "plan 1", "evidence": []}'))
+    MOCK_RESPONSES.append(AIMessage(content='{"plan": "plan 2", "evidence": []}'))
+    MOCK_RESPONSES.append(AIMessage(content='{"plan": "plan 3", "evidence": []}'))
+    
+    thread_id = f"test_thread_cap_{uuid.uuid4()}"
+    config = {"configurable": {"thread_id": thread_id, "repo_id": fixture_repo_id}}
+    state = {
+        "repo_id": fixture_repo_id,
+        "raw_issue": "Fix stuff",
+        "approval_status": "PENDING"
+    }
+    
+    with pytest.raises(RuntimeError, match="Run failed: rejected due to no evidence 3 times."):
+        app_graph.invoke(state, config)
