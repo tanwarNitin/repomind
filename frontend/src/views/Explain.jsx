@@ -13,10 +13,10 @@ export default function Explain({ currentRepo }) {
     setError('');
     try {
       const res = await generateExplain(currentRepo);
-      if (res.data.explanation) {
-        setExplanation(res.data.explanation);
-      } else if (res.data.error) {
-        setError(res.data.error);
+      if (res.explanation) {
+        setExplanation(res.explanation);
+      } else if (res.error) {
+        setError(res.error);
       }
     } catch (e) {
       setError(e.message);

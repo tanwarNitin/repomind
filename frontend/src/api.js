@@ -2,13 +2,13 @@ import axios from 'axios';
 
 const api = axios.create({ baseURL: '/api' });
 
+api.interceptors.response.use(res => res.data);
+
 export const getHealth = () => api.get('/health');
 export const ingestRepo = (source) => api.post('/ingest', { source });
 export const getRepos = async () => {
-  const res = await api.get('/repos');
-  const data = res.data;
-  res.data = Array.isArray(data) ? data : Object.values(data || {});
-  return res;
+  const data = await api.get('/repos');
+  return Array.isArray(data) ? data : Object.entries(data || {}).map(([key, val]) => ({ repo_id: key, ...val }));
 };
 export const submitTriage = (payload) => api.post('/triage', payload); // { repo_id, issue_text, issue_url }
 export const getState = (thread_id) => api.get(`/state/${thread_id}`);

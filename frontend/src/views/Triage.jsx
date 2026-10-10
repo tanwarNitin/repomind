@@ -48,10 +48,10 @@ export default function Triage({ currentRepo }) {
   const checkFinalState = async () => {
     try {
       const res = await getState(threadId);
-      if (res.data && res.data.approval_status) {
-        setFinalState(res.data);
-        setStatus(res.data.approval_status);
-        if (res.data.approval_status === 'AWAITING_APPROVAL') {
+      if (res && res.approval_status) {
+        setFinalState(res);
+        setStatus(res.approval_status);
+        if (res.approval_status === 'AWAITING_APPROVAL') {
           setShowModal(true);
         }
       } else {
@@ -71,7 +71,7 @@ export default function Triage({ currentRepo }) {
     setStatus('STARTING');
     try {
       const res = await submitTriage({ repo_id: currentRepo, issue_text: issueText, issue_url: issueUrl });
-      setThreadId(res.data.thread_id);
+      setThreadId(res.thread_id);
       setStatus('RUNNING');
     } catch (err) {
       alert('Error: ' + err.message);

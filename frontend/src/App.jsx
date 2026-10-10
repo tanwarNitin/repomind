@@ -20,8 +20,8 @@ function TopBar({ repos, currentRepo, setCurrentRepo, refreshRepos }) {
     try {
       const res = await ingestRepo(ingestPath);
       await refreshRepos();
-      if (res.data && res.data.repo_id) {
-        setCurrentRepo(res.data.repo_id);
+      if (res && res.repo_id) {
+        setCurrentRepo(res.repo_id);
       }
       setIngestPath('');
       setStatusMsg({ text: 'Success!', type: 'success' });
@@ -111,7 +111,7 @@ export default function App() {
   const refreshRepos = async () => {
     try {
       const res = await getRepos();
-      const reposArray = Array.isArray(res.data) ? res.data : [];
+      const reposArray = Array.isArray(res) ? res : [];
       setRepos(reposArray);
       if (reposArray.length > 0 && !currentRepo) {
         setCurrentRepo(reposArray[0].repo_id);

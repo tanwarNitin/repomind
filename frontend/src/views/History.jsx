@@ -10,7 +10,7 @@ export default function History() {
     const fetchHistory = async () => {
       try {
         const res = await getHistory();
-        setRuns(Array.isArray(res.data) ? res.data : []);
+        setRuns(Array.isArray(res) ? res : []);
       } catch (e) {
         console.error(e);
         setError('Failed to load history.');

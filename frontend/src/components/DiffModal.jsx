@@ -22,8 +22,8 @@ export default function DiffModal({ threadId, state, onClose }) {
     setLoading(true);
     try {
       const res = await openPr({ thread_id: threadId });
-      if (res.data.error) alert('PR Error: ' + res.data.error);
-      else alert('PR Opened: ' + res.data.url);
+      if (res.error) alert('PR Error: ' + res.error);
+      else alert('PR Opened: ' + res.url);
     } catch (e) {
       alert('Error: ' + e.message);
     } finally {

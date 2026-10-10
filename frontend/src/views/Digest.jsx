@@ -12,10 +12,10 @@ export default function Digest({ currentRepo }) {
     setError('');
     try {
       const res = await generateDigest(currentRepo);
-      if (res.data.digest_id) {
-        const fetchRes = await getDigest(res.data.digest_id);
-        if (fetchRes.data) {
-          setDigestData(fetchRes.data);
+      if (res.digest_id) {
+        const fetchRes = await getDigest(res.digest_id);
+        if (fetchRes) {
+          setDigestData(fetchRes);
         } else {
           setError('Failed to fetch digest data');
         }
