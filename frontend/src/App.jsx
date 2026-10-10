@@ -50,7 +50,7 @@ function TopBar({ repos, currentRepo, setCurrentRepo, refreshRepos }) {
           >
             <option value="">Select a repository...</option>
             {Array.isArray(repos) && repos.map(r => (
-              <option key={r.repo_id} value={r.repo_id}>{r.repo_id}</option>
+              <option key={r.repo_id} value={r.repo_id}>{r.displayName || r.repo_id}</option>
             ))}
           </select>
         </div>
@@ -112,9 +112,27 @@ export default function App() {
     try {
       const res = await getRepos();
       const reposArray = Array.isArray(res) ? res : [];
-      setRepos(reposArray);
-      if (reposArray.length > 0 && !currentRepo) {
-        setCurrentRepo(reposArray[0].repo_id);
+      
+      const nameCounts = {};
+      const withBaseNames = reposArray.map(r => {
+        let source = r.source || r.path || '';
+        source = source.replace(/\.git$/, '');
+        const parts = source.split(/[\/\\]/).filter(Boolean);
+        const baseName = parts.length > 0 ? parts[parts.length - 1] : r.repo_id;
+        nameCounts[baseName] = (nameCounts[baseName] || 0) + 1;
+        return { ...r, baseName };
+      });
+      
+      const finalRepos = withBaseNames.map(r => {
+        const displayName = nameCounts[r.baseName] > 1 
+          ? `${r.baseName} (${r.repo_id.substring(0, 8)})` 
+          : r.baseName;
+        return { ...r, displayName };
+      });
+
+      setRepos(finalRepos);
+      if (finalRepos.length > 0 && !currentRepo) {
+        setCurrentRepo(finalRepos[0].repo_id);
       }
     } catch (e) {
       console.error(e);
